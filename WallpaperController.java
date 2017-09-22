@@ -178,66 +178,66 @@ class WallpaperController {
     WindowState getWallpaperTarget() {
         return mWallpaperTarget;
     }
-
-    boolean isWallpaperTarget(WindowState win) {
-        return win == mWallpaperTarget;
+//*********************************************************** Shaun's comments
+    boolean isWallpaperTarget(WindowState win) {  // Return true, if window manager's wallpaper target 
+        return win == mWallpaperTarget;            // equal to win parameter( win may be the current window wallpaper)
     }
 
-    boolean isBelowWallpaperTarget(WindowState win) {
-        return mWallpaperTarget != null && mWallpaperTarget.mLayer >= win.mBaseLayer;
-    }
+    boolean isBelowWallpaperTarget(WindowState win) {  // Compare the manager's wallpaper target with win( corrent wallpaper).  
+        return mWallpaperTarget != null && mWallpaperTarget.mLayer >= win.mBaseLayer; // If mWallpaperTarget's layer >= win.mBaselayer,
+    }                                                                                   //return true.
 
-    boolean isWallpaperVisible() {
-        return isWallpaperVisible(mWallpaperTarget);
-    }
+    boolean isWallpaperVisible() { // return wallpaper visible status in boolean and debug log.
+        return isWallpaperVisible(mWallpaperTarget); // The method can be invoke from other class.
+    }                                                // But user cannot know about its detail.
 
     /**
      * Starts {@param a} on all wallpaper windows.
      */
-    void startWallpaperAnimation(Animation a) {
+    void startWallpaperAnimation(Animation a) {  // Animation tasks are stored as stack in WindowManageService.
         for (int curTokenNdx = mWallpaperTokens.size() - 1; curTokenNdx >= 0; curTokenNdx--) {
             final WallpaperWindowToken token = mWallpaperTokens.get(curTokenNdx);
-            token.startAnimation(a);
+            token.startAnimation(a); // Use for loop start every animation tokens in the stack.
         }
     }
 
-    private boolean isWallpaperVisible(WindowState wallpaperTarget) {
-        if (DEBUG_WALLPAPER) Slog.v(TAG, "Wallpaper vis: target " + wallpaperTarget + ", obscured="
+    private boolean isWallpaperVisible(WindowState wallpaperTarget) { // return wallpaper visible status in boolean and debug log.
+        if (DEBUG_WALLPAPER) Slog.v(TAG, "Wallpaper vis: target " + wallpaperTarget + ", obscured=" // The method cannot be invoke from other class.
                 + (wallpaperTarget != null ? Boolean.toString(wallpaperTarget.mObscured) : "??")
                 + " anim=" + ((wallpaperTarget != null && wallpaperTarget.mAppToken != null)
                 ? wallpaperTarget.mAppToken.mAppAnimator.animation : null)
                 + " prev=" + mPrevWallpaperTarget);
-        return (wallpaperTarget != null
-                && (!wallpaperTarget.mObscured || (wallpaperTarget.mAppToken != null
-                && wallpaperTarget.mAppToken.mAppAnimator.animation != null)))
-                || mPrevWallpaperTarget != null;
-    }
+        return (wallpaperTarget != null                                                 // return true means visible
+                && (!wallpaperTarget.mObscured || (wallpaperTarget.mAppToken != null    // the wallpaperTarget must be not malicious;
+                && wallpaperTarget.mAppToken.mAppAnimator.animation != null)))          // the token must usable.
+                || mPrevWallpaperTarget != null;                                        // animation must usable.
+    }                                                                                   // previous wallpaper target must be exist.
 
-    boolean isWallpaperTargetAnimating() {
+    boolean isWallpaperTargetAnimating() {                  // this method use for judge dynamic or static wallpaper
         return mWallpaperTarget != null && mWallpaperTarget.mWinAnimator.isAnimationSet()
                 && !mWallpaperTarget.mWinAnimator.isDummyAnimation();
     }
 
     void updateWallpaperVisibility() {
-        final boolean visible = isWallpaperVisible(mWallpaperTarget);
+        final boolean visible = isWallpaperVisible(mWallpaperTarget); //return wallpaper visible status in boolean and debug log
 
         for (int curTokenNdx = mWallpaperTokens.size() - 1; curTokenNdx >= 0; curTokenNdx--) {
             final WallpaperWindowToken token = mWallpaperTokens.get(curTokenNdx);
-            token.updateWallpaperVisibility(visible);
+            token.updateWallpaperVisibility(visible); //Use for loop updating every animation tokens in the stack.
         }
     }
 
-    void hideDeferredWallpapersIfNeeded() {
-        if (mDeferredHideWallpaper != null) {
+    void hideDeferredWallpapersIfNeeded() { // hide the deferred wallpapers by user
+        if (mDeferredHideWallpaper != null) { //// Set to the wallpaper window we would like to hide once the transition animations are done.
             hideWallpapers(mDeferredHideWallpaper);
             mDeferredHideWallpaper = null;
         }
-    }
+    } //defferred hide means wait a delay time.
 
     void hideWallpapers(final WindowState winGoingAway) {
-        if (mWallpaperTarget != null
+        if (mWallpaperTarget != null                            //If mWallpaperTarget non-null, this is the currently visible window that is associated to wallpaper.
                 && (mWallpaperTarget != winGoingAway || mPrevWallpaperTarget != null)) {
-            return;
+            return;                                             // If return, that means this wallpapers still useful, do not need to hide.
         }
         if (mService.mAppTransition.isRunning()) {
             // Defer hiding the wallpaper when app transition is running until the animations
@@ -247,8 +247,8 @@ class WallpaperController {
         }
 
         final boolean wasDeferred = (mDeferredHideWallpaper == winGoingAway);
-        for (int i = mWallpaperTokens.size() - 1; i >= 0; i--) {
-            final WallpaperWindowToken token = mWallpaperTokens.get(i);
+        for (int i = mWallpaperTokens.size() - 1; i >= 0; i--) {   // If no any return above, user will hide wall papers according to the Token "stack",
+            final WallpaperWindowToken token = mWallpaperTokens.get(i); // and output debug information.
             token.hideWallpaperToken(wasDeferred, "hideWallpapers");
             if (DEBUG_WALLPAPER_LIGHT && !token.hidden) Slog.d(TAG, "Hiding wallpaper " + token
                     + " from " + winGoingAway + " target=" + mWallpaperTarget + " prev="
@@ -257,41 +257,41 @@ class WallpaperController {
     }
 
     boolean updateWallpaperOffset(WindowState wallpaperWin, int dw, int dh, boolean sync) {
-        boolean rawChanged = false;
+        boolean rawChanged = false; // initial rawChanged
         // Set the default wallpaper x-offset to either edge of the screen (depending on RTL), to
         // match the behavior of most Launchers
-        float defaultWallpaperX = wallpaperWin.isRtl() ? 1f : 0f;
-        float wpx = mLastWallpaperX >= 0 ? mLastWallpaperX : defaultWallpaperX;
-        float wpxs = mLastWallpaperXStep >= 0 ? mLastWallpaperXStep : -1.0f;
-        int availw = wallpaperWin.mFrame.right - wallpaperWin.mFrame.left - dw;
-        int offset = availw > 0 ? -(int)(availw * wpx + .5f) : 0;
+        float defaultWallpaperX = wallpaperWin.isRtl() ? 1f : 0f; 
+        float wpx = mLastWallpaperX >= 0 ? mLastWallpaperX : defaultWallpaperX; // initial x position about the wallpaper, x is central value.
+        float wpxs = mLastWallpaperXStep >= 0 ? mLastWallpaperXStep : -1.0f; // initial xstep, xstep value relates to number of desktop.
+        int availw = wallpaperWin.mFrame.right - wallpaperWin.mFrame.left - dw; //calculate the layout of the screen and total width of all desktops.
+        int offset = availw > 0 ? -(int)(availw * wpx + .5f) : 0; // offset value relates to the number of desktop.
         if (mLastWallpaperDisplayOffsetX != Integer.MIN_VALUE) {
             offset += mLastWallpaperDisplayOffsetX;
         }
-        boolean changed = wallpaperWin.mXOffset != offset;
-        if (changed) {
-            if (DEBUG_WALLPAPER) Slog.v(TAG, "Update wallpaper " + wallpaperWin + " x: " + offset);
+        boolean changed = wallpaperWin.mXOffset != offset; // compare the calculated value to the old value in window manager.
+        if (changed) {                                      // if the new valuse(calculated one) different from the old one, update it.
+            if (DEBUG_WALLPAPER) Slog.v(TAG, "Update wallpaper " + wallpaperWin + " x: " + offset);  // Output debug information.
             wallpaperWin.mXOffset = offset;
         }
-        if (wallpaperWin.mWallpaperX != wpx || wallpaperWin.mWallpaperXStep != wpxs) {
-            wallpaperWin.mWallpaperX = wpx;
+        if (wallpaperWin.mWallpaperX != wpx || wallpaperWin.mWallpaperXStep != wpxs) { // compare the calculated value to the old value in window manager.
+            wallpaperWin.mWallpaperX = wpx; // update the new value.
             wallpaperWin.mWallpaperXStep = wpxs;
             rawChanged = true;
         }
 
-        float wpy = mLastWallpaperY >= 0 ? mLastWallpaperY : 0.5f;
+        float wpy = mLastWallpaperY >= 0 ? mLastWallpaperY : 0.5f;    // calculate new value about to y, same logic with x.
         float wpys = mLastWallpaperYStep >= 0 ? mLastWallpaperYStep : -1.0f;
         int availh = wallpaperWin.mFrame.bottom - wallpaperWin.mFrame.top - dh;
         offset = availh > 0 ? -(int)(availh * wpy + .5f) : 0;
         if (mLastWallpaperDisplayOffsetY != Integer.MIN_VALUE) {
             offset += mLastWallpaperDisplayOffsetY;
         }
-        if (wallpaperWin.mYOffset != offset) {
+        if (wallpaperWin.mYOffset != offset) { // calculate new value about to y, same logic with x.
             if (DEBUG_WALLPAPER) Slog.v(TAG, "Update wallpaper " + wallpaperWin + " y: " + offset);
             changed = true;
             wallpaperWin.mYOffset = offset;
         }
-        if (wallpaperWin.mWallpaperY != wpy || wallpaperWin.mWallpaperYStep != wpys) {
+        if (wallpaperWin.mWallpaperY != wpy || wallpaperWin.mWallpaperYStep != wpys) { // calculate new value about to y, same logic with x.
             wallpaperWin.mWallpaperY = wpy;
             wallpaperWin.mWallpaperYStep = wpys;
             rawChanged = true;
@@ -300,34 +300,34 @@ class WallpaperController {
         if (rawChanged && (wallpaperWin.mAttrs.privateFlags &
                 WindowManager.LayoutParams.PRIVATE_FLAG_WANTS_OFFSET_NOTIFICATIONS) != 0) {
             try {
-                if (DEBUG_WALLPAPER) Slog.v(TAG, "Report new wp offset "
+                if (DEBUG_WALLPAPER) Slog.v(TAG, "Report new wp offset "  //if new value update, output debugging infomation.
                         + wallpaperWin + " x=" + wallpaperWin.mWallpaperX
                         + " y=" + wallpaperWin.mWallpaperY);
-                if (sync) {
+                if (sync) {  // if user set sync = true, update mWaitingOnWallpaper. This is set when we are waiting for a wallpaper to tell us it is done
                     mWaitingOnWallpaper = wallpaperWin;
                 }
-                wallpaperWin.mClient.dispatchWallpaperOffsets(
+                wallpaperWin.mClient.dispatchWallpaperOffsets( 
                         wallpaperWin.mWallpaperX, wallpaperWin.mWallpaperY,
-                        wallpaperWin.mWallpaperXStep, wallpaperWin.mWallpaperYStep, sync);
+                        wallpaperWin.mWallpaperXStep, wallpaperWin.mWallpaperYStep, sync); // dispatch the new valuse.
                 if (sync) {
                     if (mWaitingOnWallpaper != null) {
-                        long start = SystemClock.uptimeMillis();
-                        if ((mLastWallpaperTimeoutTime + WALLPAPER_TIMEOUT_RECOVERY)
-                                < start) {
-                            try {
+                        long start = SystemClock.uptimeMillis(); // current time - boot time
+                        if ((mLastWallpaperTimeoutTime + WALLPAPER_TIMEOUT_RECOVERY) // Wallpaper is not down. mLastWallpaperTimeoutTime is the last time we had a timeout when waiting for a wallpaper.
+                                < start) {                                           // If actual time "start" longer than timeouttime+recovery time,
+                            try {                                                    // output debug information, we need wait(10000ms) after a timeout before trying to wait again.
                                 if (DEBUG_WALLPAPER) Slog.v(TAG,
                                         "Waiting for offset complete...");
                                 mService.mWindowMap.wait(WALLPAPER_TIMEOUT);
                             } catch (InterruptedException e) {
                             }
-                            if (DEBUG_WALLPAPER) Slog.v(TAG, "Offset complete!");
-                            if ((start + WALLPAPER_TIMEOUT) < SystemClock.uptimeMillis()) {
+                            if (DEBUG_WALLPAPER) Slog.v(TAG, "Offset complete!"); //  Wait a short time, if wallpaper is done, then output log.
+                            if ((start + WALLPAPER_TIMEOUT) < SystemClock.uptimeMillis()) { // 
                                 Slog.i(TAG, "Timeout waiting for wallpaper to offset: "
                                         + wallpaperWin);
-                                mLastWallpaperTimeoutTime = start;
+                                mLastWallpaperTimeoutTime = start; //Update the last time we had a timeout when waiting for a wallpaper.
                             }
                         }
-                        mWaitingOnWallpaper = null;
+                        mWaitingOnWallpaper = null; // wallpaper is done
                     }
                 }
             } catch (RemoteException e) {
@@ -337,25 +337,25 @@ class WallpaperController {
         return changed;
     }
 
-    void setWindowWallpaperPosition(
+    void setWindowWallpaperPosition( //user set new wallpaper or numbers of desktop (set parameter x & y), when the new value different from the old value, need updata. 
             WindowState window, float x, float y, float xStep, float yStep) {
         if (window.mWallpaperX != x || window.mWallpaperY != y)  {
-            window.mWallpaperX = x;
+            window.mWallpaperX = x; // wallpaper Position is the central position.
             window.mWallpaperY = y;
-            window.mWallpaperXStep = xStep;
-            window.mWallpaperYStep = yStep;
+            window.mWallpaperXStep = xStep; // if user set numbers of desktop, x/y step should adjust.
+            window.mWallpaperYStep = yStep; 
             updateWallpaperOffsetLocked(window, true);
         }
     }
 
     void setWindowWallpaperDisplayOffset(WindowState window, int x, int y) {
-        if (window.mWallpaperDisplayOffsetX != x || window.mWallpaperDisplayOffsetY != y)  {
-            window.mWallpaperDisplayOffsetX = x;
-            window.mWallpaperDisplayOffsetY = y;
+        if (window.mWallpaperDisplayOffsetX != x || window.mWallpaperDisplayOffsetY != y)  { //user set new wallpaper or numbers of desktop (set parameter x & y), when the new value different from the old value, need update.  
+            window.mWallpaperDisplayOffsetX = x; // offset. e.g. if there is only one 5 parts of desktop, 
+            window.mWallpaperDisplayOffsetY = y; // the first desktop means step = 0, the second step = 0.2, the third = 0.4
             updateWallpaperOffsetLocked(window, true);
         }
     }
-
+//*******************************************Shaun comments end
     Bundle sendWindowWallpaperCommand(
             WindowState window, String action, int x, int y, int z, Bundle extras, boolean sync) {
         if (window == mWallpaperTarget || window == mPrevWallpaperTarget) {
